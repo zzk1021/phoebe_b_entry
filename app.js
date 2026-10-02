@@ -1,10 +1,10 @@
 'use strict';
 const CHANNELS = [{name:'历史调研室',mid:'519872016',symbol:'🏛️'},{name:'思维实验室',mid:'14583962',symbol:'💡'}];
 function parseVideos(text) {
-  const channels = CHANNELS.map(c=>({...c,videos:[]})); const errors=[]; let current=null; const seen=new Set();
+  const channels = []; const errors=[]; let current=null; const seen=new Set();
   text.replace(/^\uFEFF/,'').split(/\r?\n/).forEach((raw,i)=>{
     const line=raw.trim(); if(!line || line.startsWith('#')) return;
-    if(line.startsWith('[') && line.endsWith(']')) {current=channels.find(c=>c.name===line.slice(1,-1));if(!current) errors.push('第 '+(i+1)+' 行：频道名称不正确');return;}
+    if(line.startsWith('[') && line.endsWith(']')) {const name=line.slice(1,-1).trim(); if(!name){current=null;errors.push('第 '+(i+1)+' 行：频道名不能为空');return;} current=channels.find(c=>c.name===name);if(!current){current={name,symbol:CHANNELS.find(c=>c.name===name)?.symbol || '🎬',videos:[]};channels.push(current);}return;}
     if(!current){errors.push('第 '+(i+1)+' 行：请先填写频道标题');return;}
     const [input,...labels]=line.split('|'); const source=input.trim();let bvid,p=1;
     if(/^BV[0-9A-Za-z]{10}$/.test(source)) bvid=source;

@@ -6,7 +6,7 @@
 
 上传新版文件不会自动删除旧文件。在原仓库中删除旧的 scripts/update.py，并删除 .github/workflows/ 下所有旧的「更新视频列表」定时抓取工作流（包含 schedule 或调用 update.py 的文件）。如果暂时不删除，可先到 Actions 打开旧工作流，通过菜单选择 Disable workflow。旧 config.json、videos.json 已不再使用，可删除。
 
-本 ZIP 没有 scripts/update.py，也没有自定义 Actions workflow。不会请求 B站 API、WBI 或 Cookie，不会因列表抓取触发 HTTP 412。实际视频播放仍由 B站外链播放器提供，播放可用性依赖 B站。
+本 ZIP 没有 scripts/update.py，也没有自定义 Actions workflow。网站页面不会请求 B站列表 API，部署也不会自动抓取。新增的本地维护脚本由家长手动运行，会请求 B站列表 API，因此仍可能遇到 HTTP 412；失败时不修改清单。实际视频播放仍由 B站外链播放器提供，播放可用性依赖 B站。
 
 ## 部署到 GitHub Pages
 
@@ -38,7 +38,7 @@ https://www.bilibili.com/video/BV1B7411m7LV/?p=2 | 我给第 2 集起的标题
 - 多集视频用完整链接里的 ?p=2 指定集数，不写则播放第 1 集。每一集都应单独批准。
 - 不支持 b23.tv 短链接：先自行打开短链接，复制浏览器地址栏中的完整 bilibili.com/video/BV… 链接。支持 www.bilibili.com、bilibili.com、m.bilibili.com。
 - 重复的 BV 号及同一集只显示一次，第一次出现的位置有效。
-- 拼错频道名或视频格式时，页面会提示对应行号，其余有效视频仍显示。
+- 频道名为空或视频格式错误时，页面会提示对应行号，其余有效视频仍显示。
 - 初始列表为空，示例全部是注释；没有默认批准任何视频。
 
 ## 页面与播放
@@ -59,4 +59,20 @@ https://www.bilibili.com/video/BV1B7411m7LV/?p=2 | 我给第 2 集起的标题
 
 ## 文件
 
-index.html 为页面；style.css 为样式；app.js 读取并校验本地清单、创建播放器；videos.txt 为唯一需要日常维护的清单；icon.svg 为网站图标；.nojekyll 禁用 Jekyll；README.md 为本说明。没有后端、密钥、第三方脚本依赖或定时抓取。
+index.html 为页面；style.css 为样式；app.js 读取并校验本地清单、创建播放器；videos.txt 为唯一需要日常维护的清单；icon.svg 为网站图标；.nojekyll 禁用 Jekyll；README.md 为本说明。没有后端、第三方脚本依赖或定时抓取；scripts/update.cjs 是可选的本地维护工具。
+
+## 本地批量更新频道视频（新增）
+
+先在电脑安装 Node.js 18 或以上版本（建议当前 LTS）：https://nodejs.org/ 。无需安装任何第三方包。在解压后的项目目录打开终端。
+
+1. 编辑 channels.json，默认是历史调研室和思维实验室，maxVideosPerChannel 为 12。每个频道填 name 和 mid（UP 主主页 https://space.bilibili.com/ 后面的数字）。支持 1～20 个频道，每个最新 1～30 条视频，不抓取全部历史投稿。增加频道不用改 HTML 或 app.js，网页会根据 videos.txt 的频道标题显示。
+2. 运行：`node scripts/update.cjs`。该命令请求 B站、按发布时间取最新投稿，只生成 videos.candidates.txt，绝不自动覆盖已批准的 videos.txt。任一频道失败或返回空列表时，整个批次停止，旧候选及正式清单都保持不变。
+3. 用文本编辑器打开 videos.candidates.txt，删除不合适的视频行，改标题或调整顺序，然后保存。再次运行抓取会覆盖候选文件，请先完成审核。
+4. 审核完成后运行：`node scripts/update.cjs --approve`。此命令不联网，校验候选格式后替换 videos.txt，并在 .local-backups 保存旧清单。批准会整体替换正式清单，不合并旧视频；想保留旧视频，请先复制到候选文件。
+5. 将新的 videos.txt 上传到 GitHub 同一位置并提交，等 Pages 部署完成后刷新 iPad。第一次升级还需上传新版 app.js，以支持额外频道。脚本不自动提交 Git 或上传。
+
+候选文件和备份可能包含尚未批准的内容，不要上传到公开站点；.gitignore 已排除它们，但 GitHub 网页上传不会遵守 .gitignore。channels.json 和 scripts/ 仅供电脑维护，部署网页无需它们。
+
+脚本不依赖 GitHub Actions，不应放入定时工作流。B站投稿接口并非稳定的公开服务；家庭网络也可能返回 HTTP 412、-352 或其他风控错误。遇到错误请停止重试、稍后再试，或继续手工添加链接。页面内嵌播放不受抓取失败影响。
+
+可选：脚本支持从电脑环境变量 BILIBILI_COOKIE 读取自己的登录 Cookie，不需要匿名抓取时不要设置。不要把 Cookie 写进配置、源码或上传 GitHub，也不要发到聊天里；登录信息不保证能解决风控。默认无需 Cookie，脚本不会保存或打印它。

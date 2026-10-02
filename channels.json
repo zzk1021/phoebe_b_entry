@@ -1,0 +1,13 @@
+{
+  "maxVideosPerChannel": 12,
+  "channels": [
+    {
+      "name": "历史调研室",
+      "mid": "519872016"
+    },
+    {
+      "name": "思维实验室",
+      "mid": "14583962"
+    }
+  ]
+}
